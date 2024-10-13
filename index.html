@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Voting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-image: url('https://media.discordapp.net/attachments/1293624418081177742/1295013233954000906/image_3.png?ex=670d1a8f&is=670bc90f&hm=8ba2c83ee6f6d862eb44f15c9d997a517528ec9c1a6e63515bf4e595b289b04e&=&format=webp&quality=lossless&width=527&height=350');
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 3em;
+      margin-bottom: 30px;
+    }
+
+    .category {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease;
+    }
+
+    .category:hover {
+      transform: translateY(-5px);
+    }
+
+    .category h2 {
+      color: #f4f4f4;
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+
+    .players {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .player {
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 15px 30px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .player:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-5px);
+    }
+
+    .player.voted {
+      background-color: #28a745;
+    }
+
+    button {
+      background-color: #ff4081;
+      color: #fff;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 25px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-top: 30px;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #e91e63;
+      transform: translateY(-5px);
+    }
+
+    .reset-btn {
+      background-color: #f44336;
+    }
+
+    .reset-btn:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <h1>VOTE PARA DECIDIR QUEM SÃO OS MELHORES DESSA SEASON!</h1>
+  <div id="categories"></div>
+
+  <!-- Botão para resetar os votos -->
+  <button class="reset-btn" onclick="resetVotes()">Resetar Votos</button>
+
+  <script>
+    const categories = [
+      { name: "BEST MOBILE", players: ["Player A", "Player B", "Player C"] },
+      { name: "BEST GK", players: ["Player D", "Player E", "Player F"] },
+      { name: "BEST CB", players: ["Player G", "Player H", "Player I"] },
+      { name: "BEST CM", players: ["Player J", "Player K", "Player L"] },
+      { name: "BEST ST", players: ["Player M", "Player N", "Player O"] },
+    ];
+
+    // Contador de votos por categoria e jogador
+    let voteCounts = JSON.parse(localStorage.getItem('voteCounts')) || {};
+
+    if (Object.keys(voteCounts).length === 0) {
+      categories.forEach(category => {
+        voteCounts[category.name] = {};
+        category.players.forEach(player => {
+          voteCounts[category.name][player] = 0;
+        });
+      });
+    }
+
+    const votedCategories = JSON.parse(localStorage.getItem('votes')) || {};
+
+    function sendVoteToDiscord(category, player) {
+      const webhookUrl = 'https://discord.com/api/webhooks/1295011304867762216/udUhv7xhAz4OhBaK-FjPqrU9QUDRjJMLbveZONjLj90gbCTLos9VJL2L6drGxJlH3ezF'; // coloque aqui o seu webhook do Discord
+
+      const data = {
+        content: `Votação na categoria **${category}** - Jogador: **${player}**. Total de votos: ${voteCounts[category][player]}`
+      };
+
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      }).then(response => {
+        console.log('Webhook enviado com sucesso!');
+      }).catch(error => {
+        console.error('Erro ao enviar webhook:', error);
+      });
+    }
+
+    function vote(category, player) {
+      if (votedCategories[category]) {
+        alert(`Você já votou em ${votedCategories[category]} na categoria ${category}!`);
+        return;
+      }
+
+      // Incrementa o voto para o jogador
+      voteCounts[category][player] += 1;
+      localStorage.setItem('voteCounts', JSON.stringify(voteCounts));
+
+      votedCategories[category] = player;
+      localStorage.setItem('votes', JSON.stringify(votedCategories));
+
+      sendVoteToDiscord(category, player);
+      alert(`Voto registrado com sucesso! Você votou em ${player} na categoria ${category}.`);
+
+      renderCategories();
+    }
+
+    function renderCategories() {
+      const categoriesContainer = document.getElementById('categories');
+      categoriesContainer.innerHTML = '';
+
+      categories.forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'category';
+        categoryDiv.innerHTML = `<h2>${category.name}</h2>`;
+
+        const playersDiv = document.createElement('div');
+        playersDiv.className = 'players';
+
+        category.players.forEach(player => {
+          const playerDiv = document.createElement('div');
+          playerDiv.className = 'player' + (votedCategories[category.name] === player ? ' voted' : '');
+          playerDiv.innerText = player;
+          playerDiv.onclick = () => vote(category.name, player);
+
+          playersDiv.appendChild(playerDiv);
+        });
+
+        categoryDiv.appendChild(playersDiv);
+        categoriesContainer.appendChild(categoryDiv);
+      });
+    }
+
+    function resetVotes() {
+      localStorage.removeItem('votes');
+      localStorage.removeItem('voteCounts');
+      alert('Todos os votos foram resetados!');
+      location.reload();
+    }
+
+    renderCategories();
+  </script>
+</body>
+</html>
